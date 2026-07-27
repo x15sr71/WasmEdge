@@ -721,6 +721,10 @@ Expect<void> FunctionCompiler::compile(AST::InstrView Instrs) noexcept {
     case OpCode::I64__trunc_sat_f32_u:
     case OpCode::I64__trunc_sat_f64_s:
     case OpCode::I64__trunc_sat_f64_u:
+    case OpCode::I64__add128:
+    case OpCode::I64__sub128:
+    case OpCode::I64__mul_wide_s:
+    case OpCode::I64__mul_wide_u:
       return compileNumericOp(Instr);
     case OpCode::V128__load:
     case OpCode::V128__load8x8_s:

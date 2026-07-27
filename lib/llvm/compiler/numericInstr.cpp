@@ -689,6 +689,61 @@ FunctionCompiler::compileNumericOp(const AST::Instruction &Instr) noexcept {
     break;
 
     // SIMD Memory Instructions
+    case OpCode::I64__add128: {
+    // Stack (top-to-bottom): b_hi, b_lo, a_hi, a_lo
+    auto BHi = stackPop();
+    auto BLo = stackPop();
+    auto AHi = stackPop();
+    auto ALo = stackPop();
+    auto Shift64 = LLVM::Value::getConstInt(Context.Int128Ty, 64);
+    auto A = Builder.createOr(
+        Builder.createShl(Builder.createZExt(AHi, Context.Int128Ty), Shift64),
+        Builder.createZExt(ALo, Context.Int128Ty));
+    auto B = Builder.createOr(
+        Builder.createShl(Builder.createZExt(BHi, Context.Int128Ty), Shift64),
+        Builder.createZExt(BLo, Context.Int128Ty));
+    auto R = Builder.createAdd(A, B);
+    stackPush(Builder.createTrunc(R, Context.Int64Ty));
+    stackPush(Builder.createTrunc(Builder.createLShr(R, Shift64), Context.Int64Ty));
+    break;
+  }
+  case OpCode::I64__sub128: {
+    auto BHi = stackPop();
+    auto BLo = stackPop();
+    auto AHi = stackPop();
+    auto ALo = stackPop();
+    auto Shift64 = LLVM::Value::getConstInt(Context.Int128Ty, 64);
+    auto A = Builder.createOr(
+        Builder.createShl(Builder.createZExt(AHi, Context.Int128Ty), Shift64),
+        Builder.createZExt(ALo, Context.Int128Ty));
+    auto B = Builder.createOr(
+        Builder.createShl(Builder.createZExt(BHi, Context.Int128Ty), Shift64),
+        Builder.createZExt(BLo, Context.Int128Ty));
+    auto R = Builder.createSub(A, B);
+    stackPush(Builder.createTrunc(R, Context.Int64Ty));
+    stackPush(Builder.createTrunc(Builder.createLShr(R, Shift64), Context.Int64Ty));
+    break;
+  }
+  case OpCode::I64__mul_wide_s: {
+    auto B = stackPop();
+    auto A = stackPop();
+    auto Shift64 = LLVM::Value::getConstInt(Context.Int128Ty, 64);
+    auto R = Builder.createMul(Builder.createSExt(A, Context.Int128Ty),
+                               Builder.createSExt(B, Context.Int128Ty));
+    stackPush(Builder.createTrunc(R, Context.Int64Ty));
+    stackPush(Builder.createTrunc(Builder.createLShr(R, Shift64), Context.Int64Ty));
+    break;
+  }
+  case OpCode::I64__mul_wide_u: {
+    auto B = stackPop();
+    auto A = stackPop();
+    auto Shift64 = LLVM::Value::getConstInt(Context.Int128Ty, 64);
+    auto R = Builder.createMul(Builder.createZExt(A, Context.Int128Ty),
+                               Builder.createZExt(B, Context.Int128Ty));
+    stackPush(Builder.createTrunc(R, Context.Int64Ty));
+    stackPush(Builder.createTrunc(Builder.createLShr(R, Shift64), Context.Int64Ty));
+    break;
+  }
   default:
     assumingUnreachable();
   }

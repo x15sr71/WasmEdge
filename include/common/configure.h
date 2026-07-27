@@ -235,6 +235,7 @@ public:
     // unsafeAddProposal(Proposal::Annotations);    Not implemented
     unsafeAddProposal(Proposal::ExceptionHandling);
     unsafeAddProposal(Proposal::Memory64);
+    unsafeAddProposal(Proposal::WideArithmetic);
   }
   template <typename... ArgsT> Configure(ArgsT... Args) noexcept : Configure() {
     (unsafeAddSet(Args), ...);
@@ -429,6 +430,11 @@ public:
       // These instructions are for ExceptionHandling proposal.
       if (unlikely(!hasProposal(Proposal::ExceptionHandling))) {
         return Proposal::ExceptionHandling;
+      }
+    } else if (Code >= OpCode::I64__add128 && Code <= OpCode::I64__mul_wide_u) {
+      // These instructions are for the Wide Arithmetic proposal.
+      if (unlikely(!hasProposal(Proposal::WideArithmetic))) {
+        return Proposal::WideArithmetic;
       }
     }
     return {};

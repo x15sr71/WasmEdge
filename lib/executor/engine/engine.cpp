@@ -10,6 +10,8 @@
 #include <cstdint>
 #include <cstring>
 
+#include <iostream>
+
 using namespace std::literals;
 
 namespace WasmEdge {
@@ -851,6 +853,49 @@ Expect<void> Executor::execute(Runtime::StackManager &StackMgr,
     case OpCode::I64__trunc_sat_f64_u:
       return runTruncateSatOp<double, uint64_t>(StackMgr.getTop());
 
+    // Wide Arithmetic Instructions
+    case OpCode::I64__add128: {
+      uint64_t BHi = StackMgr.pop().get<uint64_t>();
+      uint64_t BLo = StackMgr.pop().get<uint64_t>();
+      uint64_t AHi = StackMgr.pop().get<uint64_t>();
+      uint64_t ALo = StackMgr.pop().get<uint64_t>();
+      uint128_t A = (static_cast<uint128_t>(AHi) << 64U) | static_cast<uint128_t>(ALo);
+      uint128_t B = (static_cast<uint128_t>(BHi) << 64U) | static_cast<uint128_t>(BLo);
+      uint128_t R = A + B;
+      StackMgr.push(ValVariant(static_cast<uint64_t>(R)));
+      StackMgr.push(ValVariant(static_cast<uint64_t>(R >> 64U)));
+      return {};
+    }
+    case OpCode::I64__sub128: {
+      uint64_t BHi = StackMgr.pop().get<uint64_t>();
+      uint64_t BLo = StackMgr.pop().get<uint64_t>();
+      uint64_t AHi = StackMgr.pop().get<uint64_t>();
+      uint64_t ALo = StackMgr.pop().get<uint64_t>();
+      uint128_t A = (static_cast<uint128_t>(AHi) << 64U) | static_cast<uint128_t>(ALo);
+      uint128_t B = (static_cast<uint128_t>(BHi) << 64U) | static_cast<uint128_t>(BLo);
+      uint128_t R = A - B;
+      StackMgr.push(ValVariant(static_cast<uint64_t>(R)));
+      StackMgr.push(ValVariant(static_cast<uint64_t>(R >> 64U)));
+      return {};
+    }
+    case OpCode::I64__mul_wide_s: {
+      int64_t B = StackMgr.pop().get<int64_t>();
+      int64_t A = StackMgr.pop().get<int64_t>();
+      int128_t R = static_cast<int128_t>(A) * static_cast<int128_t>(B);
+      uint128_t UR = static_cast<uint128_t>(R);
+      StackMgr.push(ValVariant(static_cast<uint64_t>(UR)));
+      StackMgr.push(ValVariant(static_cast<uint64_t>(UR >> 64U)));
+      return {};
+    }
+    case OpCode::I64__mul_wide_u: {
+      uint64_t B = StackMgr.pop().get<uint64_t>();
+      uint64_t A = StackMgr.pop().get<uint64_t>();
+      uint128_t R = static_cast<uint128_t>(A) * static_cast<uint128_t>(B);
+      StackMgr.push(ValVariant(static_cast<uint64_t>(R)));
+      StackMgr.push(ValVariant(static_cast<uint64_t>(R >> 64U)));
+      return {};
+    }
+
     // SIMD Memory Instructions
     case OpCode::V128__load:
       return runLoadOp<uint128_t>(
@@ -1526,6 +1571,7 @@ Expect<void> Executor::execute(Runtime::StackManager &StackMgr,
     }
     case OpCode::I32x4__add: {
       ValVariant Rhs = StackMgr.pop();
+      std::cerr << "[SIMD TRACE] i32x4.add\n";
       return runVectorAddOp<uint32_t>(StackMgr.getTop(), Rhs);
     }
     case OpCode::I32x4__sub: {
