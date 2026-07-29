@@ -66,6 +66,7 @@ add_subdirectory(po)
 add_subdirectory(instance)
 add_subdirectory(errinfo)
 add_subdirectory(vm)
+add_subdirectory(wide_arithmetic)
 
 if(WASMEDGE_BUILD_COVERAGE)
   include(ProcessorCount)

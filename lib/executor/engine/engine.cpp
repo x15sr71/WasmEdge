@@ -881,10 +881,10 @@ Expect<void> Executor::execute(Runtime::StackManager &StackMgr,
     case OpCode::I64__mul_wide_s: {
       int64_t B = StackMgr.pop().get<int64_t>();
       int64_t A = StackMgr.pop().get<int64_t>();
-      int128_t R = static_cast<int128_t>(A) * static_cast<int128_t>(B);
-      uint128_t UR = static_cast<uint128_t>(R);
-      StackMgr.push(ValVariant(static_cast<uint64_t>(UR)));
-      StackMgr.push(ValVariant(static_cast<uint64_t>(UR >> 64U)));
+      uint128_t R = static_cast<uint128_t>(static_cast<int128_t>(A)) *
+                    static_cast<uint128_t>(static_cast<int128_t>(B));
+      StackMgr.push(ValVariant(static_cast<uint64_t>(R)));
+      StackMgr.push(ValVariant(static_cast<uint64_t>(R >> 64U)));
       return {};
     }
     case OpCode::I64__mul_wide_u: {

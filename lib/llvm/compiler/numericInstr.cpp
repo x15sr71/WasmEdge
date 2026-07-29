@@ -688,9 +688,8 @@ FunctionCompiler::compileNumericOp(const AST::Instruction &Instr) noexcept {
     compileUnsignedTruncSat(Context.Int64Ty);
     break;
 
-    // SIMD Memory Instructions
-    case OpCode::I64__add128: {
-    // Stack (top-to-bottom): b_hi, b_lo, a_hi, a_lo
+  // Wide Arithmetic Instructions
+  case OpCode::I64__add128: {
     auto BHi = stackPop();
     auto BLo = stackPop();
     auto AHi = stackPop();
