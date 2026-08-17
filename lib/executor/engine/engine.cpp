@@ -853,24 +853,24 @@ Expect<void> Executor::execute(Runtime::StackManager &StackMgr,
 
     // Wide Arithmetic Instructions
     case OpCode::I64__add128: {
-      uint64_t BHi = StackMgr.pop().get<uint64_t>();
-      uint64_t BLo = StackMgr.pop().get<uint64_t>();
-      uint64_t AHi = StackMgr.pop().get<uint64_t>();
-      uint64_t ALo = StackMgr.pop().get<uint64_t>();
-      uint128_t A = (static_cast<uint128_t>(AHi) << 64U) | static_cast<uint128_t>(ALo);
-      uint128_t B = (static_cast<uint128_t>(BHi) << 64U) | static_cast<uint128_t>(BLo);
+      uint64_t BHi64 = StackMgr.pop().get<uint64_t>();
+      uint64_t BLo64 = StackMgr.pop().get<uint64_t>();
+      uint64_t AHi64 = StackMgr.pop().get<uint64_t>();
+      uint64_t ALo64 = StackMgr.pop().get<uint64_t>();
+      uint128_t A = (static_cast<uint128_t>(AHi64) << 64U) | static_cast<uint128_t>(ALo64);
+      uint128_t B = (static_cast<uint128_t>(BHi64) << 64U) | static_cast<uint128_t>(BLo64);
       uint128_t R = A + B;
       StackMgr.push(ValVariant(static_cast<uint64_t>(R)));
       StackMgr.push(ValVariant(static_cast<uint64_t>(R >> 64U)));
       return {};
     }
     case OpCode::I64__sub128: {
-      uint64_t BHi = StackMgr.pop().get<uint64_t>();
-      uint64_t BLo = StackMgr.pop().get<uint64_t>();
-      uint64_t AHi = StackMgr.pop().get<uint64_t>();
-      uint64_t ALo = StackMgr.pop().get<uint64_t>();
-      uint128_t A = (static_cast<uint128_t>(AHi) << 64U) | static_cast<uint128_t>(ALo);
-      uint128_t B = (static_cast<uint128_t>(BHi) << 64U) | static_cast<uint128_t>(BLo);
+      uint64_t BHi64 = StackMgr.pop().get<uint64_t>();
+      uint64_t BLo64 = StackMgr.pop().get<uint64_t>();
+      uint64_t AHi64 = StackMgr.pop().get<uint64_t>();
+      uint64_t ALo64 = StackMgr.pop().get<uint64_t>();
+      uint128_t A = (static_cast<uint128_t>(AHi64) << 64U) | static_cast<uint128_t>(ALo64);
+      uint128_t B = (static_cast<uint128_t>(BHi64) << 64U) | static_cast<uint128_t>(BLo64);
       uint128_t R = A - B;
       StackMgr.push(ValVariant(static_cast<uint64_t>(R)));
       StackMgr.push(ValVariant(static_cast<uint64_t>(R >> 64U)));

@@ -690,34 +690,34 @@ FunctionCompiler::compileNumericOp(const AST::Instruction &Instr) noexcept {
 
   // Wide Arithmetic Instructions
   case OpCode::I64__add128: {
-    auto BHi = stackPop();
-    auto BLo = stackPop();
-    auto AHi = stackPop();
-    auto ALo = stackPop();
+    auto BHi64 = stackPop();
+    auto BLo64 = stackPop();
+    auto AHi64 = stackPop();
+    auto ALo64 = stackPop();
     auto Shift64 = LLVM::Value::getConstInt(Context.Int128Ty, 64);
     auto A = Builder.createOr(
-        Builder.createShl(Builder.createZExt(AHi, Context.Int128Ty), Shift64),
-        Builder.createZExt(ALo, Context.Int128Ty));
+        Builder.createShl(Builder.createZExt(AHi64, Context.Int128Ty), Shift64),
+        Builder.createZExt(ALo64, Context.Int128Ty));
     auto B = Builder.createOr(
-        Builder.createShl(Builder.createZExt(BHi, Context.Int128Ty), Shift64),
-        Builder.createZExt(BLo, Context.Int128Ty));
+        Builder.createShl(Builder.createZExt(BHi64, Context.Int128Ty), Shift64),
+        Builder.createZExt(BLo64, Context.Int128Ty));
     auto R = Builder.createAdd(A, B);
     stackPush(Builder.createTrunc(R, Context.Int64Ty));
     stackPush(Builder.createTrunc(Builder.createLShr(R, Shift64), Context.Int64Ty));
     break;
   }
   case OpCode::I64__sub128: {
-    auto BHi = stackPop();
-    auto BLo = stackPop();
-    auto AHi = stackPop();
-    auto ALo = stackPop();
+    auto BHi64 = stackPop();
+    auto BLo64 = stackPop();
+    auto AHi64 = stackPop();
+    auto ALo64 = stackPop();
     auto Shift64 = LLVM::Value::getConstInt(Context.Int128Ty, 64);
     auto A = Builder.createOr(
-        Builder.createShl(Builder.createZExt(AHi, Context.Int128Ty), Shift64),
-        Builder.createZExt(ALo, Context.Int128Ty));
+        Builder.createShl(Builder.createZExt(AHi64, Context.Int128Ty), Shift64),
+        Builder.createZExt(ALo64, Context.Int128Ty));
     auto B = Builder.createOr(
-        Builder.createShl(Builder.createZExt(BHi, Context.Int128Ty), Shift64),
-        Builder.createZExt(BLo, Context.Int128Ty));
+        Builder.createShl(Builder.createZExt(BHi64, Context.Int128Ty), Shift64),
+        Builder.createZExt(BLo64, Context.Int128Ty));
     auto R = Builder.createSub(A, B);
     stackPush(Builder.createTrunc(R, Context.Int64Ty));
     stackPush(Builder.createTrunc(Builder.createLShr(R, Shift64), Context.Int64Ty));
