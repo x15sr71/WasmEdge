@@ -10,8 +10,6 @@
 #include <cstdint>
 #include <cstring>
 
-#include <iostream>
-
 using namespace std::literals;
 
 namespace WasmEdge {
@@ -1571,7 +1569,6 @@ Expect<void> Executor::execute(Runtime::StackManager &StackMgr,
     }
     case OpCode::I32x4__add: {
       ValVariant Rhs = StackMgr.pop();
-      std::cerr << "[SIMD TRACE] i32x4.add\n";
       return runVectorAddOp<uint32_t>(StackMgr.getTop(), Rhs);
     }
     case OpCode::I32x4__sub: {
