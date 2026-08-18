@@ -235,7 +235,8 @@ public:
     // unsafeAddProposal(Proposal::Annotations);    Not implemented
     unsafeAddProposal(Proposal::ExceptionHandling);
     unsafeAddProposal(Proposal::Memory64);
-    unsafeAddProposal(Proposal::WideArithmetic);
+    // WideArithmetic is opt-in (like Threads), not default-on: the upstream
+    // proposal's signature (i1 carry-flag) isn't settled yet.
   }
   template <typename... ArgsT> Configure(ArgsT... Args) noexcept : Configure() {
     (unsafeAddSet(Args), ...);
