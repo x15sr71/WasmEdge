@@ -3,6 +3,7 @@
 
 wasmedge_add_executable(wasmedgeWideArithTests
   WideArithTest.cpp
+  WideArithDiffTest.cpp
 )
 
 add_test(wasmedgeWideArithTests wasmedgeWideArithTests)
