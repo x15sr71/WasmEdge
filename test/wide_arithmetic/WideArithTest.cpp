@@ -18,6 +18,7 @@
 #ifdef WASMEDGE_USE_LLVM
 #include "llvm/codegen.h"
 #include "llvm/compiler.h"
+#include "llvm/jit.h"
 #endif
 
 #include "gtest/gtest.h"
@@ -89,12 +90,13 @@ static void CheckResult(VM::VM &VMInst, std::string_view Name,
 class WideArithInterp : public ::testing::Test {
 protected:
   void SetUp() override {
-    Conf.addProposal(Proposal::WideArithmetic);
     ASSERT_TRUE(VM.loadWasm(WideArithWasm));
     ASSERT_TRUE(VM.validate());
     ASSERT_TRUE(VM.instantiate());
   }
-  Configure Conf;
+  // Proposal must be set before VM is constructed below (member init order),
+  // not in SetUp() -- VM would already have copied Conf's state by then.
+  Configure Conf{Proposal::WideArithmetic};
   VM::VM VM{Conf};
 };
 
@@ -160,7 +162,6 @@ TEST_F(WideArithInterp, mul_wide_s_min_neg1) {
 class WideArithAOT : public ::testing::Test {
 protected:
   void SetUp() override {
-    Conf.addProposal(Proposal::WideArithmetic);
     Conf.getCompilerConfigure().setOutputFormat(
         CompilerConfigure::OutputFormat::Native);
 
@@ -188,7 +189,8 @@ protected:
 
   std::filesystem::path AotPath{std::filesystem::temp_directory_path() /
                                 "wide_arith_test.so"};
-  Configure Conf;
+  // Same ordering requirement as WideArithInterp above.
+  Configure Conf{Proposal::WideArithmetic};
   VM::VM VM{Conf};
 };
 
@@ -208,6 +210,71 @@ TEST_F(WideArithAOT, mul_wide_s_minval) {
   CheckResult(VM, "mul_wide_s_minval", 0, INT64_C(0x4000000000000000));
 }
 TEST_F(WideArithAOT, mul_wide_s_min_neg1) {
+  CheckResult(VM, "mul_wide_s_min_neg1", std::numeric_limits<int64_t>::min(), 0);
+}
+
+// -----------------------------------------------------------------------
+// JIT fixture — VM compiles in-memory via ORC LLJIT at instantiate time.
+// This is a genuinely different path from AOT: no .so on disk, code is
+// loaded through LLVM::JIT/OrcLLJIT's relocation and symbol-resolution
+// machinery instead of dlopen. It shares the same IR lowering
+// (numericInstr.cpp) as AOT, but that's a reason to expect it to work, not
+// a substitute for testing it: VM::unsafeLoadJITExecutable() logs and
+// swallows any JIT failure and silently falls back to the interpreter, so
+// a VM-only test could "pass" on interpreter results without JIT ever
+// having run. We drive Compiler+JIT independently first to assert the JIT
+// path itself succeeds, then use VM for the actual multi-value-return
+// execution.
+// -----------------------------------------------------------------------
+Configure makeJITConfigure() {
+  Configure C{Proposal::WideArithmetic};
+  C.getRuntimeConfigure().setRunMode(RunMode::JIT);
+  return C;
+}
+
+class WideArithJIT : public ::testing::Test {
+protected:
+  void SetUp() override {
+    LLVM::Compiler Compiler(Conf);
+    ASSERT_TRUE(Compiler.checkConfigure());
+    Loader::Loader Ldr(Conf);
+    Validator::Validator Val(Conf);
+    auto Mod = Ldr.parseModule(WideArithWasm);
+    ASSERT_TRUE(Mod);
+    ASSERT_TRUE(Val.validate(**Mod));
+    auto Data = Compiler.compile(**Mod);
+    ASSERT_TRUE(Data) << "JIT-path LLVM compilation failed for wide-arithmetic";
+    LLVM::JIT Jit(Conf);
+    auto Exec = Jit.load(std::move(*Data));
+    ASSERT_TRUE(Exec) << "ORC LLJIT load failed for wide-arithmetic module";
+
+    ASSERT_TRUE(VM.loadWasm(WideArithWasm));
+    ASSERT_TRUE(VM.validate());
+    ASSERT_TRUE(VM.instantiate());
+  }
+
+  // Same ordering requirement as WideArithInterp above: RunMode must be set
+  // before VM is constructed.
+  Configure Conf{makeJITConfigure()};
+  VM::VM VM{Conf};
+};
+
+TEST_F(WideArithJIT, add128_zero)     { CheckResult(VM, "add128_zero", 0, 0); }
+TEST_F(WideArithJIT, add128_carry)    { CheckResult(VM, "add128_carry", 0, 1); }
+TEST_F(WideArithJIT, add128_wrap)     { CheckResult(VM, "add128_wrap", 0, 0); }
+TEST_F(WideArithJIT, sub128_simple)   { CheckResult(VM, "sub128_simple", 7, 0); }
+TEST_F(WideArithJIT, sub128_borrow)   { CheckResult(VM, "sub128_borrow", -1, 0); }
+TEST_F(WideArithJIT, sub128_wrap)     { CheckResult(VM, "sub128_wrap", -1, -1); }
+TEST_F(WideArithJIT, mul_wide_u_simple) { CheckResult(VM, "mul_wide_u_simple", 15, 0); }
+TEST_F(WideArithJIT, mul_wide_u_max)  { CheckResult(VM, "mul_wide_u_max", 1, -2); }
+TEST_F(WideArithJIT, mul_wide_u_one)  { CheckResult(VM, "mul_wide_u_one", -1, 0); }
+TEST_F(WideArithJIT, mul_wide_s_pos)  { CheckResult(VM, "mul_wide_s_pos", 42, 0); }
+TEST_F(WideArithJIT, mul_wide_s_neg1) { CheckResult(VM, "mul_wide_s_neg1", 1, 0); }
+TEST_F(WideArithJIT, mul_wide_s_negmix) { CheckResult(VM, "mul_wide_s_negmix", -2, -1); }
+TEST_F(WideArithJIT, mul_wide_s_minval) {
+  CheckResult(VM, "mul_wide_s_minval", 0, INT64_C(0x4000000000000000));
+}
+TEST_F(WideArithJIT, mul_wide_s_min_neg1) {
   CheckResult(VM, "mul_wide_s_min_neg1", std::numeric_limits<int64_t>::min(), 0);
 }
 #endif // WASMEDGE_USE_LLVM
